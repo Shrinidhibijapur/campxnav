@@ -1,36 +1,52 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# DSCE Campus Navigator 🏛️
 
-## Getting Started
+> An unofficial, student-built campus map for Dayananda Sagar College of Engineering.
 
-First, run the development server:
+---
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+This started because finding buildings on campus was genuinely annoying. The official site has the info, but getting from "I need to find the CSE block" to actually standing in front of it takes way too many steps.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+So we're building something better.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## What this will be
 
-## Learn More
+A fast, no-nonsense web app where you open it, search for a department or building, and get walking directions from wherever you're standing — with a proper 3D map, not just a Google Maps redirect.
 
-To learn more about Next.js, take a look at the following resources:
+Real satellite view. 3D buildings. Turn-by-turn. Works on your phone.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+---
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Status
 
-## Deploy on Vercel
+**Currently in active development.**
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+We're building this in phases. The search and building directory is coming first, then the 3D navigation layer on top of it. Things will break. Pages might be half-done. That's fine — this is a dev build, not a product launch.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+If you're a student who wants to contribute or found something broken, open an issue.
+
+---
+
+## What works right now
+
+- [ ] Building directory (all 41 locations)
+- [ ] Live search by department or block name
+- [ ] 3D map with satellite view *(in progress)*
+- [ ] Walk / drive navigation from your location *(in progress)*
+- [ ] Mobile-first UI *(in progress)*
+
+---
+
+## Built with
+
+- Next.js 14
+- MapLibre GL JS (3D maps, open source)
+- MapTiler Cloud (satellite tiles + terrain)
+- OpenRouteService (routing)
+- Framer Motion + GSAP (animations)
+- Tailwind CSS
+
+---
+
+*More updates soon. Watch the repo.*
