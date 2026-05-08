@@ -22,9 +22,10 @@ html, body { height: 100%; width: 100%; overflow: hidden; font-family: var(--fon
 ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 10px; }
 
 /* ===== Map Container ===== */
-.map-wrapper { position: fixed; inset: 0; z-index: 0; }
+.map-wrapper { position: fixed; inset: 0; z-index: 0; width: 100vw; height: 100vh; }
+.map-wrapper canvas { display: block; width: 100% !important; height: 100% !important; }
 .maplibregl-canvas { outline: none; }
-.maplibregl-ctrl-bottom-left, .maplibregl-ctrl-bottom-right { display: none; }
+.maplibregl-ctrl-bottom-left, .maplibregl-ctrl-bottom-right, .maplibregl-ctrl-top-left, .maplibregl-ctrl-top-right { display: none !important; }
 
 /* ===== Building Marker ===== */
 .building-marker {

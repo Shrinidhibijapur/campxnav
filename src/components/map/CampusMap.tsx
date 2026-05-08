@@ -69,26 +69,17 @@ export default function CampusMap() {
       container: mapContainer.current,
       style: styleUrl,
       center: CAMPUS_CENTER,
-      zoom: 14,
+      zoom: 16,
       pitch: 0,
       bearing: 0,
       maxPitch: 85,
+      attributionControl: false,
     });
 
     mapRef.current = map;
 
-    // On style load — add 3D buildings and markers
-    map.on("style.load", () => {
-      // Add 3D building extrusions
-      try {
-        if (map.getSource("openmaptiles") && !map.getLayer("3d-buildings-custom")) {
-          map.addLayer(BUILDING_EXTRUSION_LAYER as maplibregl.LayerSpecification);
-        }
-      } catch (err) {
-        console.warn("3D buildings:", err);
-      }
-
-      // Add markers
+    // Helper: add building markers
+    const addMarkers = () => {
       markersRef.current.forEach(m => m.remove());
       markersRef.current = [];
       buildings.forEach((bldg) => {
@@ -105,26 +96,66 @@ export default function CampusMap() {
           .addTo(map);
         markersRef.current.push(marker);
       });
+    };
+
+    // Helper: try adding 3D building extrusions
+    const add3DBuildings = () => {
+      try {
+        if (map.getLayer("3d-buildings-custom")) return;
+        // Detect which vector source is available (varies by style provider)
+        const possibleSources = ["openmaptiles", "maptiler_planet", "composite"];
+        let vectorSource: string | null = null;
+        for (const src of possibleSources) {
+          if (map.getSource(src)) {
+            vectorSource = src;
+            break;
+          }
+        }
+        if (vectorSource) {
+          const layer = {
+            ...BUILDING_EXTRUSION_LAYER,
+            source: vectorSource,
+          };
+          map.addLayer(layer as maplibregl.LayerSpecification);
+        }
+      } catch (err) {
+        console.warn("3D buildings:", err);
+      }
+    };
+
+    // Helper: animate camera to campus and dismiss loading
+    const animateToCampus = () => {
+      gsap.to({}, {
+        duration: 2.5,
+        onUpdate: function () {
+          const p = this.progress();
+          const e = 1 - Math.pow(1 - p, 3); // ease-out cubic
+          map.jumpTo({
+            center: CAMPUS_CENTER,
+            zoom: 16 + (DEFAULT_VIEW.zoom - 16) * e,
+            pitch: DEFAULT_VIEW.pitch * e,
+            bearing: DEFAULT_VIEW.bearing * e,
+          });
+        },
+        onComplete: () => setLoading(false),
+      });
+    };
+
+    // On map fully loaded
+    map.on("load", () => {
+      add3DBuildings();
+      addMarkers();
+      setTimeout(animateToCampus, 400);
     });
 
-    map.on("load", () => {
-      setTimeout(() => {
-        gsap.to({}, {
-          duration: 3,
-          onUpdate: function () {
-            const p = this.progress();
-            const e = 1 - Math.pow(1 - p, 3);
-            map.jumpTo({
-              center: CAMPUS_CENTER,
-              zoom: 14 + (DEFAULT_VIEW.zoom - 14) * e,
-              pitch: DEFAULT_VIEW.pitch * e,
-              bearing: DEFAULT_VIEW.bearing * e,
-            });
-          },
-          onComplete: () => setLoading(false),
-        });
-      }, 300);
-    });
+    // Failsafe: if map doesn't fire 'load' within 8s, dismiss loading anyway
+    const failsafeTimer = setTimeout(() => {
+      if (loading) {
+        console.warn("Map load failsafe triggered");
+        addMarkers();
+        setLoading(false);
+      }
+    }, 8000);
 
     map.on("click", () => {
       if (!navigating) {
@@ -133,7 +164,13 @@ export default function CampusMap() {
       }
     });
 
+    // Log any map errors for debugging
+    map.on("error", (e) => {
+      console.warn("Map error:", e.error?.message || e);
+    });
+
     return () => {
+      clearTimeout(failsafeTimer);
       map.remove();
       mapRef.current = null;
     };

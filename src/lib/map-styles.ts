@@ -1,23 +1,33 @@
 // ============================================================
 // Map Style Configuration
-// Uses OpenFreeMap (free, no API key needed) as PRIMARY base
-// MapTiler satellite can be added as overlay when key works
+// Uses MapTiler as PRIMARY (dark style for premium look)
+// Falls back to OpenFreeMap if no key
 // ============================================================
 
 const MAPTILER_KEY = process.env.NEXT_PUBLIC_MAPTILER_KEY || "";
 
-// Always use OpenFreeMap positron as the primary style — guaranteed to work
+/**
+ * Returns the best available map style URL.
+ * - If a MapTiler key is configured, uses MapTiler's streets-dark style
+ *   for a premium dark-themed look that matches the app UI.
+ * - Falls back to OpenFreeMap liberty (better compatibility than positron)
+ */
 export function getMapStyleUrl(): string {
-  return "https://tiles.openfreemap.org/styles/positron";
+  // Use MapTiler dark streets if key is available
+  if (MAPTILER_KEY && MAPTILER_KEY !== "YOUR_MAPTILER_KEY_HERE") {
+    return `https://api.maptiler.com/maps/streets-v2-dark/style.json?key=${MAPTILER_KEY}`;
+  }
+  // Fallback: OpenFreeMap liberty style (better MapLibre v5 compat than positron)
+  return "https://tiles.openfreemap.org/styles/liberty";
 }
 
-// MapTiler hybrid for satellite overlay (when key works)
-export function getMapTilerStyleUrl(): string | null {
+// MapTiler hybrid/satellite for satellite overlay
+export function getMapTilerSatelliteUrl(): string | null {
   if (!MAPTILER_KEY || MAPTILER_KEY === "YOUR_MAPTILER_KEY_HERE") return null;
   return `https://api.maptiler.com/maps/hybrid/style.json?key=${MAPTILER_KEY}`;
 }
 
-// 3D Building extrusion layer config — for OpenFreeMap (openmaptiles source)
+// 3D Building extrusion layer config — works with openmaptiles source
 export const BUILDING_EXTRUSION_LAYER = {
   id: "3d-buildings-custom",
   type: "fill-extrusion" as const,

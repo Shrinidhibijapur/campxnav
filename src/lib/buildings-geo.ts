@@ -16,10 +16,10 @@ export interface BuildingGeo {
 // Campus center point — Dayananda Sagar College of Engineering
 export const CAMPUS_CENTER: [number, number] = [77.5658, 12.9082];
 
-// Default map view settings
+// Default map view settings — zoomed tight on DSCE campus
 export const DEFAULT_VIEW = {
   center: CAMPUS_CENTER,
-  zoom: 17,
+  zoom: 18,
   pitch: 55,
   bearing: -20,
 };
