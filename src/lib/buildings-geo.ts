@@ -39,8 +39,7 @@ export const buildings: BuildingGeo[] = [
     ],
     "googleMapsUrl": "https://maps.app.goo.gl/XJB4exGW3cn9igmL6",
     "coordinates": [
-      77.5651,
-      12.9078
+      77.56651, 12.90887
     ],
     "height": 12,
     "roofColor": "#c8b89a"
@@ -55,8 +54,7 @@ export const buildings: BuildingGeo[] = [
     ],
     "googleMapsUrl": "https://maps.app.goo.gl/6UZBP7tUxtcZudmC6",
     "coordinates": [
-      77.5654,
-      12.9081
+      77.56704, 12.90923
     ],
     "height": 10,
     "roofColor": "#d4cfc8"
@@ -71,8 +69,7 @@ export const buildings: BuildingGeo[] = [
     ],
     "googleMapsUrl": "https://maps.app.goo.gl/YXBYzrH3yrp2iBN36",
     "coordinates": [
-      77.5649,
-      12.9084
+   77.56826, 12.90884
     ],
     "height": 12,
     "roofColor": "#b8ada0"
@@ -91,8 +88,7 @@ export const buildings: BuildingGeo[] = [
     ],
     "googleMapsUrl": "https://maps.app.goo.gl/EnDnBN9hEnhUQWF29",
     "coordinates": [
-      77.5656,
-      12.9076
+     77.56834, 12.90855
     ],
     "height": 18,
     "roofColor": "#e0dbd4"
@@ -107,8 +103,7 @@ export const buildings: BuildingGeo[] = [
     ],
     "googleMapsUrl": "https://maps.app.goo.gl/vDEEA1D5jGBpzdJF9",
     "coordinates": [
-      77.5659,
-      12.9074
+    77.56798, 12.90855
     ],
     "height": 15,
     "roofColor": "#a89e93"
@@ -123,8 +118,7 @@ export const buildings: BuildingGeo[] = [
     ],
     "googleMapsUrl": "https://maps.app.goo.gl/vDEEA1D5jGBpzdJF9",
     "coordinates": [
-      77.5662,
-      12.9077
+     77.56776, 12.90856
     ],
     "height": 12,
     "roofColor": "#c4bdb3"
@@ -139,8 +133,7 @@ export const buildings: BuildingGeo[] = [
     ],
     "googleMapsUrl": "https://maps.app.goo.gl/qnoj4SfDaWrSmjrm6",
     "coordinates": [
-      77.5665,
-      12.908
+      77.56776, 12.90824
     ],
     "height": 12,
     "roofColor": "#b0a598"
@@ -155,8 +148,7 @@ export const buildings: BuildingGeo[] = [
     ],
     "googleMapsUrl": "https://maps.app.goo.gl/bn83Fqa4PaowWXcs5",
     "coordinates": [
-      77.5661,
-      12.9083
+   77.56749, 12.90824
     ],
     "height": 10,
     "roofColor": "#d8d2ca"
@@ -172,8 +164,7 @@ export const buildings: BuildingGeo[] = [
     ],
     "googleMapsUrl": "https://maps.app.goo.gl/GEgPknuV8aZv4JFLA",
     "coordinates": [
-      77.5658,
-      12.9086
+      77.56773, 12.9079
     ],
     "height": 15,
     "roofColor": "#bfb5a8"
@@ -192,8 +183,7 @@ export const buildings: BuildingGeo[] = [
     ],
     "googleMapsUrl": "https://maps.app.goo.gl/Yy5xVJWpym8NniCm9",
     "coordinates": [
-      77.5655,
-      12.9089
+     77.56764, 12.90772
     ],
     "height": 18,
     "roofColor": "#ccc5bb"
@@ -210,8 +200,7 @@ export const buildings: BuildingGeo[] = [
     ],
     "googleMapsUrl": "https://maps.app.goo.gl/dxtd86e2n7yxFUXG7",
     "coordinates": [
-      77.5652,
-      12.9085
+      77.56763, 12.90721
     ],
     "height": 20,
     "roofColor": "#ddd7ce"
@@ -226,8 +215,7 @@ export const buildings: BuildingGeo[] = [
     ],
     "googleMapsUrl": "https://maps.app.goo.gl/LK6KGQZpPm69nznb7",
     "coordinates": [
-      77.5648,
-      12.908
+   77.56679, 12.90642
     ],
     "height": 12,
     "roofColor": "#c9c1b5"
@@ -243,8 +231,7 @@ export const buildings: BuildingGeo[] = [
     ],
     "googleMapsUrl": "https://maps.app.goo.gl/WGAcL2V6RmVnnXZ66",
     "coordinates": [
-      77.5646,
-      12.9077
+      77.56628, 12.90714
     ],
     "height": 12,
     "roofColor": "#d1cab0"
@@ -260,8 +247,7 @@ export const buildings: BuildingGeo[] = [
     ],
     "googleMapsUrl": "https://maps.app.goo.gl/xqxhHAqnvhYcDceg9",
     "coordinates": [
-      77.5663,
-      12.9072
+      77.56635, 12.90679
     ],
     "height": 12,
     "roofColor": "#bdb5a9"
@@ -277,8 +263,7 @@ export const buildings: BuildingGeo[] = [
     ],
     "googleMapsUrl": "https://maps.app.goo.gl/T4taTXZRaPHgjzFR7",
     "coordinates": [
-      77.566,
-      12.9088
+      77.56622, 12.90737
     ],
     "height": 12,
     "roofColor": "#d4cdc2"
@@ -293,8 +278,7 @@ export const buildings: BuildingGeo[] = [
     ],
     "googleMapsUrl": "https://maps.app.goo.gl/DyFPugryAbsLj8Sv9",
     "coordinates": [
-      77.5657,
-      12.9091
+      77.5656, 12.90708
     ],
     "height": 10,
     "roofColor": "#c2bbb0"
@@ -313,8 +297,7 @@ export const buildings: BuildingGeo[] = [
     ],
     "googleMapsUrl": "https://maps.app.goo.gl/ghdBg1mqNX4GfaW1A",
     "coordinates": [
-      77.5653,
-      12.9092
+     77.56552, 12.90764
     ],
     "height": 15,
     "roofColor": "#b5ada2"
@@ -329,8 +312,7 @@ export const buildings: BuildingGeo[] = [
     ],
     "googleMapsUrl": "https://maps.app.goo.gl/2i21F4zEkX9Q1nvY8",
     "coordinates": [
-      77.5668,
-      12.9085
+      77.56607, 12.90764
     ],
     "height": 8,
     "roofColor": "#dcd6cd"
@@ -348,8 +330,7 @@ export const buildings: BuildingGeo[] = [
     ],
     "googleMapsUrl": "https://maps.app.goo.gl/YXBYzrH3yrp2iBN36",
     "coordinates": [
-      77.5664,
-      12.9089
+     77.56608, 12.90778
     ],
     "height": 15,
     "roofColor": "#c7c0b5"
@@ -364,8 +345,7 @@ export const buildings: BuildingGeo[] = [
     ],
     "googleMapsUrl": "https://maps.app.goo.gl/DMEqcBNTKBkq3vsy5",
     "coordinates": [
-      77.567,
-      12.9075
+     77.56638, 12.90767
     ],
     "height": 18,
     "roofColor": "#e2dcd5"
@@ -380,8 +360,7 @@ export const buildings: BuildingGeo[] = [
     ],
     "googleMapsUrl": "https://maps.app.goo.gl/XigyWbdsS24TPWkB8",
     "coordinates": [
-      77.5672,
-      12.9078
+      77.56562, 12.90808
     ],
     "height": 15,
     "roofColor": "#c9c2b7"
@@ -398,8 +377,7 @@ export const buildings: BuildingGeo[] = [
     ],
     "googleMapsUrl": "https://maps.app.goo.gl/uVTUVArGaXX1dqZR6",
     "coordinates": [
-      77.5645,
-      12.909
+      77.56566, 12.90836
     ],
     "height": 12,
     "roofColor": "#8b6b4a"
@@ -414,8 +392,7 @@ export const buildings: BuildingGeo[] = [
     ],
     "googleMapsUrl": "https://maps.app.goo.gl/PmvhTD28ciXYwuJy8",
     "coordinates": [
-      77.565,
-      12.9087
+     77.5654, 12.90868
     ],
     "height": 18,
     "roofColor": "#d5cfc6"
@@ -431,8 +408,7 @@ export const buildings: BuildingGeo[] = [
     ],
     "googleMapsUrl": "https://maps.app.goo.gl/skHR2qxpHxDLPJxQ8",
     "coordinates": [
-      77.5647,
-      12.9083
+     77.56784, 12.90809
     ],
     "height": 12,
     "roofColor": "#b8b0a4"
@@ -448,8 +424,7 @@ export const buildings: BuildingGeo[] = [
     ],
     "googleMapsUrl": "https://maps.app.goo.gl/PPQted9ATLLGEAWD7",
     "coordinates": [
-      77.5644,
-      12.9086
+     77.56603, 12.90876
     ],
     "height": 10,
     "roofColor": "#d0c9be"
@@ -464,8 +439,7 @@ export const buildings: BuildingGeo[] = [
     ],
     "googleMapsUrl": "https://maps.app.goo.gl/kpoS9xJvM38pU2qT8",
     "coordinates": [
-      77.5666,
-      12.9082
+    77.56639, 12.9088
     ],
     "height": 8,
     "roofColor": "#c5bfb5"
@@ -481,8 +455,7 @@ export const buildings: BuildingGeo[] = [
     ],
     "googleMapsUrl": "https://maps.app.goo.gl/iJcoARKjhDxE9qS19",
     "coordinates": [
-      77.5669,
-      12.9079
+     77.56704, 12.90892
     ],
     "height": 12,
     "roofColor": "#d6d0c6"
@@ -497,8 +470,7 @@ export const buildings: BuildingGeo[] = [
     ],
     "googleMapsUrl": "https://maps.app.goo.gl/nsu6wrxGZYBW1n3a6",
     "coordinates": [
-      77.5667,
-      12.9073
+     77.56615, 12.90812
     ],
     "height": 5,
     "roofColor": "#9e9588"
@@ -513,8 +485,7 @@ export const buildings: BuildingGeo[] = [
     ],
     "googleMapsUrl": "https://maps.app.goo.gl/CDYrikyh7RXm7fCv7",
     "coordinates": [
-      77.566,
-      12.907
+      77.56671, 12.90854
     ],
     "height": 8,
     "roofColor": "#c4a882"
@@ -529,8 +500,7 @@ export const buildings: BuildingGeo[] = [
     ],
     "googleMapsUrl": "https://maps.app.goo.gl/UvT115vACWj82LwWA",
     "coordinates": [
-      77.5656,
-      12.9069
+   77.56644, 12.90843
     ],
     "height": 5,
     "roofColor": "#b5ada2"
@@ -545,8 +515,7 @@ export const buildings: BuildingGeo[] = [
     ],
     "googleMapsUrl": "https://maps.app.goo.gl/swcWcDVRzm46nPUn6",
     "coordinates": [
-      77.5652,
-      12.9073
+  77.56546, 12.90809
     ],
     "height": 5,
     "roofColor": "#bab3a8"
@@ -561,8 +530,7 @@ export const buildings: BuildingGeo[] = [
     ],
     "googleMapsUrl": "https://maps.app.goo.gl/kioxSYiJcYuZiHhXA",
     "coordinates": [
-      77.5649,
-      12.9076
+      77.56631, 12.90836
     ],
     "height": 4,
     "roofColor": "#a8a19a"
@@ -577,8 +545,7 @@ export const buildings: BuildingGeo[] = [
     ],
     "googleMapsUrl": "https://maps.app.goo.gl/3mEvVrYP8sXFLLh77",
     "coordinates": [
-      77.5646,
-      12.9073
+    77.56674, 12.90713
     ],
     "height": 0,
     "roofColor": "#5a7a3a"
@@ -593,8 +560,7 @@ export const buildings: BuildingGeo[] = [
     ],
     "googleMapsUrl": "https://maps.app.goo.gl/aW5MvAu7CfnJX3d18",
     "coordinates": [
-      77.5643,
-      12.908
+77.5669, 12.90937
     ],
     "height": 4,
     "roofColor": "#948d84"
@@ -609,8 +575,7 @@ export const buildings: BuildingGeo[] = [
     ],
     "googleMapsUrl": "https://maps.app.goo.gl/5DBPp36KGQbgwC1J8",
     "coordinates": [
-      77.5657,
-      12.9094
+    77.56648, 12.90931
     ],
     "height": 4,
     "roofColor": "#948d84"
@@ -625,8 +590,7 @@ export const buildings: BuildingGeo[] = [
     ],
     "googleMapsUrl": "https://maps.app.goo.gl/skud2i41SjYoFhQZ6",
     "coordinates": [
-      77.5671,
-      12.9087
+     77.56786, 12.90901
     ],
     "height": 0,
     "roofColor": "#6b6560"
@@ -641,8 +605,7 @@ export const buildings: BuildingGeo[] = [
     ],
     "googleMapsUrl": "https://maps.app.goo.gl/Eig6r2WGqaT65nQD9",
     "coordinates": [
-      77.5674,
-      12.9082
+    77.56595, 12.90914
     ],
     "height": 0,
     "roofColor": "#6b6560"
@@ -657,8 +620,7 @@ export const buildings: BuildingGeo[] = [
     ],
     "googleMapsUrl": "https://maps.app.goo.gl/dZP5ib98JTcsRhm37",
     "coordinates": [
-      77.5642,
-      12.9075
+   77.5663, 12.90877
     ],
     "height": 5,
     "roofColor": "#c2bab0"
@@ -673,8 +635,7 @@ export const buildings: BuildingGeo[] = [
     ],
     "googleMapsUrl": "https://maps.app.goo.gl/SmV94qVTPooFK2Ek7",
     "coordinates": [
-      77.5675,
-      12.9071
+      77.5674, 12.90928
     ],
     "height": 4,
     "roofColor": "#b0a89e"
@@ -689,8 +650,7 @@ export const buildings: BuildingGeo[] = [
     ],
     "googleMapsUrl": "https://maps.app.goo.gl/GTNi4rw6wXaNtvMp8",
     "coordinates": [
-      77.564,
-      12.9082
+    77.5672, 12.90937
     ],
     "height": 3,
     "roofColor": "#a09890"
@@ -705,8 +665,7 @@ export const buildings: BuildingGeo[] = [
     ],
     "googleMapsUrl": "https://maps.app.goo.gl/SDpVe6tCaGRFEXRE7",
     "coordinates": [
-      77.5678,
-      12.9076
+      77.56702, 12.90877
     ],
     "height": 3,
     "roofColor": "#a09890"
