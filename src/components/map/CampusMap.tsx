@@ -38,6 +38,7 @@ export default function CampusMap() {
   const markersRef = useRef<maplibregl.Marker[]>([]);
   const userMarkerRef = useRef<maplibregl.Marker | null>(null);
   const watchIdRef = useRef<number | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
 
   const [loading, setLoading] = useState(true);
   const [selectedBuilding, setSelectedBuilding] = useState<BuildingGeo | null>(null);
@@ -49,6 +50,10 @@ export default function CampusMap() {
   const [navigating, setNavigating] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const [toast, setToast] = useState<string | null>(null);
+
+  // Developer Mode (Coordinate Picker)
+  const [devMode, setDevMode] = useState(false);
+  const [pickedCoords, setPickedCoords] = useState<[number, number] | null>(null);
 
   // ============================================================
   // Show toast
@@ -63,18 +68,31 @@ export default function CampusMap() {
   useEffect(() => {
     if (mapRef.current || !mapContainer.current) return;
 
-    const styleUrl = getMapStyleUrl();
+    const initMap = async () => {
+      // Try to get Google satellite session for best imagery
+      let googleSession: string | undefined;
+      try {
+        const sessionRes = await fetch("/api/map-session");
+        if (sessionRes.ok) {
+          const sessionData = await sessionRes.json();
+          googleSession = sessionData.session;
+        }
+      } catch {
+        // Silently fall back to MapTiler/Esri
+      }
 
-    const map = new maplibregl.Map({
-      container: mapContainer.current,
-      style: styleUrl,
-      center: CAMPUS_CENTER,
-      zoom: 16,
-      pitch: 0,
-      bearing: 0,
-      maxPitch: 85,
-      attributionControl: false,
-    });
+      const styleUrl = getMapStyleUrl(googleSession);
+
+      const map = new maplibregl.Map({
+        container: mapContainer.current!,
+        style: styleUrl,
+        center: CAMPUS_CENTER,
+        zoom: 16,
+        pitch: 0,
+        bearing: 0,
+        maxPitch: 85,
+        attributionControl: false,
+      });
 
     mapRef.current = map;
 
@@ -86,7 +104,14 @@ export default function CampusMap() {
         const el = document.createElement("div");
         el.className = "building-marker";
         el.dataset.buildingId = String(bldg.sno);
-        el.innerHTML = `<div class="building-marker-inner"><span>${bldg.buildingNo}</span></div>`;
+        const roofColor = bldg.roofColor || "#fbbf24";
+        const isGroundLevel = bldg.height === 0;
+        el.innerHTML = `
+          <div class="pin" style="border-bottom: 3px solid ${roofColor}; ${isGroundLevel ? 'opacity: 0.7; transform: scale(0.85);' : ''}">
+            <span class="pin-number">${bldg.buildingNo !== "--" ? bldg.buildingNo : ""}</span>
+            <span class="pin-label">${bldg.label || bldg.name}</span>
+          </div>
+        `;
         el.addEventListener("click", (e) => {
           e.stopPropagation();
           handleBuildingSelect(bldg);
@@ -157,7 +182,13 @@ export default function CampusMap() {
       }
     }, 8000);
 
-    map.on("click", () => {
+    map.on("click", (e) => {
+      // Capture coordinates for dev mode
+      setPickedCoords([
+        Number(e.lngLat.lng.toFixed(5)), 
+        Number(e.lngLat.lat.toFixed(5))
+      ]);
+
       if (!navigating) {
         setSelectedBuilding(null);
         clearActiveMarkers();
@@ -169,10 +200,15 @@ export default function CampusMap() {
       console.warn("Map error:", e.error?.message || e);
     });
 
+    }; // end initMap
+
+    initMap();
+
     return () => {
-      clearTimeout(failsafeTimer);
-      map.remove();
-      mapRef.current = null;
+      if (mapRef.current) {
+        mapRef.current.remove();
+        mapRef.current = null;
+      }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -284,15 +320,38 @@ export default function CampusMap() {
   // ============================================================
   const fetchRoute = useCallback(
     async (from: [number, number], to: [number, number]) => {
-      try {
-        const res = await fetch("/api/directions", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ from, to, profile }),
-        });
-        const data = await res.json();
+      // Abort previous request if still pending
+      if (abortRef.current) {
+        abortRef.current.abort();
+      }
+      abortRef.current = new AbortController();
 
-        if (data.error) {
+      const cacheKey = `route_${from.join(',')}_${to.join(',')}_${profile}`;
+      const cached = sessionStorage.getItem(cacheKey);
+
+      let data;
+      if (cached) {
+        data = JSON.parse(cached);
+      } else {
+        try {
+          const res = await fetch("/api/directions", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ from, to, profile }),
+            signal: abortRef.current.signal,
+          });
+          data = await res.json();
+          if (!data.error) {
+            sessionStorage.setItem(cacheKey, JSON.stringify(data));
+          }
+        } catch (err: any) {
+          if (err.name === 'AbortError') return; // Ignore aborted requests
+          showToast("Failed to fetch route. Check your connection.");
+          return;
+        }
+      }
+
+      if (data?.error) {
           showToast(`Route error: ${data.error}`);
           return;
         }
@@ -325,9 +384,6 @@ export default function CampusMap() {
             mapRef.current.flyTo({ center: to, zoom: 17, pitch: 50, duration: 1500 });
           }
         }
-      } catch {
-        showToast("Failed to fetch route. Check your connection.");
-      }
     },
     [profile, showToast]
   );
@@ -343,11 +399,67 @@ export default function CampusMap() {
     if (map.getLayer("route-line-glow")) map.removeLayer("route-line-glow");
     if (map.getLayer("route-line")) map.removeLayer("route-line");
     if (map.getLayer("route-line-dash")) map.removeLayer("route-line-dash");
+    if (map.getLayer("route-stairs")) map.removeLayer("route-stairs");
     if (map.getSource("route")) map.removeSource("route");
+    if (map.getSource("route-stairs")) map.removeSource("route-stairs");
+
+    const normalSegments: number[][][] = [];
+    const stairSegments: number[][][] = [];
+    
+    let currentNormal: number[][] = [coordinates[0]];
+    let currentStairs: number[][] = [];
+    let inStairs = false;
+
+    for (let i = 1; i < coordinates.length; i++) {
+      const p1 = coordinates[i - 1];
+      const p2 = coordinates[i];
+      
+      const dist = haversineDistance([p1[0], p1[1]], [p2[0], p2[1]]);
+      const elev1 = p1[2] || 0;
+      const elev2 = p2[2] || 0;
+      const elevDiff = Math.abs(elev2 - elev1);
+
+      // elevation change > 2m per 10m distance = stair segment
+      const isStair = dist > 0 && (elevDiff / dist) > 0.2 && elevDiff > 1;
+
+      if (isStair) {
+        if (!inStairs) {
+          inStairs = true;
+          normalSegments.push(currentNormal);
+          currentNormal = [];
+          currentStairs = [p1, p2];
+        } else {
+          currentStairs.push(p2);
+        }
+      } else {
+        if (inStairs) {
+          inStairs = false;
+          stairSegments.push(currentStairs);
+          currentStairs = [];
+          currentNormal = [p1, p2];
+        } else {
+          currentNormal.push(p2);
+        }
+      }
+    }
+    
+    if (currentNormal.length > 1) normalSegments.push(currentNormal);
+    if (currentStairs.length > 1) stairSegments.push(currentStairs);
 
     map.addSource("route", {
       type: "geojson",
-      data: { type: "Feature", geometry: { type: "LineString", coordinates }, properties: {} },
+      data: { 
+        type: "FeatureCollection", 
+        features: normalSegments.map(coords => ({ type: "Feature", geometry: { type: "LineString", coordinates: coords }, properties: {} }))
+      },
+    });
+
+    map.addSource("route-stairs", {
+      type: "geojson",
+      data: { 
+        type: "FeatureCollection", 
+        features: stairSegments.map(coords => ({ type: "Feature", geometry: { type: "LineString", coordinates: coords }, properties: {} }))
+      },
     });
 
     // Glow layer
@@ -388,6 +500,18 @@ export default function CampusMap() {
       },
     });
 
+    // Stair layer
+    map.addLayer({
+      id: "route-stairs",
+      type: "line",
+      source: "route-stairs",
+      paint: {
+        "line-color": "#fbbf24",  // amber for stairs
+        "line-width": 4,
+        "line-dasharray": [1, 1]
+      }
+    });
+
     // Animate the dashes
     let step = 0;
     function animateDash() {
@@ -397,8 +521,8 @@ export default function CampusMap() {
       const gapLength = 2;
       const totalLength = dashLength + gapLength;
       const offset = t * totalLength;
-      if (map && map.getLayer("route-line-dash")) {
-        map.setPaintProperty("route-line-dash", "line-dasharray", [
+      if (mapRef.current && mapRef.current.getLayer("route-line-dash")) {
+        mapRef.current.setPaintProperty("route-line-dash", "line-dasharray", [
           offset,
           gapLength,
           dashLength,
@@ -462,7 +586,9 @@ export default function CampusMap() {
       if (map.getLayer("route-line-glow")) map.removeLayer("route-line-glow");
       if (map.getLayer("route-line")) map.removeLayer("route-line");
       if (map.getLayer("route-line-dash")) map.removeLayer("route-line-dash");
+      if (map.getLayer("route-stairs")) map.removeLayer("route-stairs");
       if (map.getSource("route")) map.removeSource("route");
+      if (map.getSource("route-stairs")) map.removeSource("route-stairs");
 
       map.flyTo({
         center: CAMPUS_CENTER,
@@ -523,7 +649,7 @@ export default function CampusMap() {
                   className="search-result-item"
                   onClick={() => handleBuildingSelect(b)}
                 >
-                  <div className="bldg-no">{b.buildingNo}</div>
+                  <div className="bldg-no">{b.buildingNo !== "--" ? b.buildingNo : b.label}</div>
                   <div>
                     <div className="bldg-name">{b.name}</div>
                     <div className="bldg-dept">
@@ -598,16 +724,98 @@ export default function CampusMap() {
         >
           ◎
         </button>
+        <button
+          className={`map-ctrl-btn ${devMode ? "active" : ""}`}
+          title="Developer Mode (Coordinate Picker)"
+          onClick={() => {
+            setDevMode(!devMode);
+            showToast(!devMode ? "Developer Mode Enabled: Click anywhere to get coords" : "Developer Mode Disabled");
+          }}
+        >
+          🛠️
+        </button>
       </div>
+
+      {/* Developer Mode Coordinate Picker HUD */}
+      {devMode && (
+        <div style={{
+          position: "fixed", top: 80, right: 16, zIndex: 100,
+          background: "var(--bg-panel)", backdropFilter: "blur(20px)",
+          padding: "16px", borderRadius: "12px", border: "1px solid rgba(251,191,36,0.3)",
+          color: "var(--text-primary)", maxWidth: "320px",
+          boxShadow: "0 8px 32px rgba(0,0,0,0.5)"
+        }}>
+          <h3 style={{ margin: "0 0 8px 0", fontSize: "14px", color: "var(--amber)", display: "flex", alignItems: "center", gap: "6px" }}>
+            <span>📍</span> Coordinate Picker
+          </h3>
+          <p style={{ fontSize: "12px", marginBottom: "12px", color: "var(--text-secondary)", lineHeight: 1.4 }}>
+            Click anywhere on the map to pinpoint the exact latitude and longitude.
+          </p>
+          <div style={{
+            background: "rgba(0,0,0,0.3)", padding: "10px", borderRadius: "8px",
+            fontFamily: "var(--font-mono)", fontSize: "13px", display: "flex",
+            justifyContent: "space-between", alignItems: "center", gap: "12px",
+            border: "1px solid var(--border-subtle)"
+          }}>
+            <span style={{ color: pickedCoords ? "var(--cyan)" : "var(--text-muted)" }}>
+              {pickedCoords ? `[${pickedCoords[0]}, ${pickedCoords[1]}]` : "Waiting for click..."}
+            </span>
+            {pickedCoords && (
+              <button 
+                onClick={() => {
+                  navigator.clipboard.writeText(`[${pickedCoords[0]}, ${pickedCoords[1]}]`);
+                  showToast("Coordinates copied to clipboard!");
+                }}
+                style={{
+                  background: "var(--blue)", border: "none", borderRadius: "6px",
+                  color: "#fff", padding: "6px 12px", cursor: "pointer",
+                  fontSize: "12px", fontWeight: 600, transition: "background 0.2s"
+                }}
+                onMouseOver={(e) => (e.currentTarget.style.background = "#2563eb")}
+                onMouseOut={(e) => (e.currentTarget.style.background = "var(--blue)")}
+              >
+                Copy
+              </button>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Navigation Panel */}
       <div className={`nav-panel ${selectedBuilding ? "open" : ""}`}>
         <div className="nav-panel-handle" />
         {selectedBuilding && (
           <>
-            <div className="nav-panel-header">
+            {/* Street View Preview Image */}
+            <div style={{
+              width: "100%", height: "160px",
+              backgroundImage: `url(https://maps.googleapis.com/maps/api/streetview?size=600x200&location=${selectedBuilding.coordinates[1]},${selectedBuilding.coordinates[0]}&fov=90&heading=0&pitch=5&key=${process.env.NEXT_PUBLIC_GSV_KEY || ""})`,
+              backgroundSize: "cover", backgroundPosition: "center",
+              backgroundColor: "rgba(0,0,0,0.3)",
+              borderTopLeftRadius: "24px", borderTopRightRadius: "24px",
+              borderBottom: "1px solid rgba(255,255,255,0.1)",
+              position: "relative"
+            }}>
+              {/* Building number badge overlay */}
+              {selectedBuilding.buildingNo !== "--" && (
+                <div style={{
+                  position: "absolute", bottom: 8, left: 12,
+                  background: "var(--amber)", color: "#1a1a2e",
+                  padding: "2px 10px", borderRadius: "6px",
+                  fontSize: "13px", fontWeight: 800
+                }}>
+                  #{selectedBuilding.buildingNo}
+                </div>
+              )}
+            </div>
+            <div className="nav-panel-header" style={{ paddingTop: "12px" }}>
               <div>
                 <h2>
+                  {selectedBuilding.buildingNo !== "--" && (
+                    <span style={{ color: "var(--amber)", marginRight: "6px" }}>
+                      🏛 Building {selectedBuilding.buildingNo} ·
+                    </span>
+                  )}
                   {selectedBuilding.name}
                 </h2>
                 {selectedBuilding.departments?.map((d, i) => (
@@ -615,6 +823,11 @@ export default function CampusMap() {
                     {d}
                   </span>
                 ))}
+                {selectedBuilding.height != null && selectedBuilding.height > 0 && (
+                  <div style={{ marginTop: 8, fontSize: "12px", color: "var(--text-muted)" }}>
+                    📐 ~{selectedBuilding.height}m tall · ~{Math.round(selectedBuilding.height / 3.2)} floors
+                  </div>
+                )}
               </div>
               <button className="nav-panel-close" onClick={closePanel}>
                 ✕
@@ -651,10 +864,22 @@ export default function CampusMap() {
                 </button>
               </div>
 
-              {/* Navigate Button */}
-              <button className="nav-start-btn" onClick={startNavigation}>
-                {navigating ? "Navigating..." : "Start Navigation"}
-              </button>
+              {/* Action Buttons */}
+              <div className="action-buttons" style={{ display: "flex", gap: "12px" }}>
+                <button className="nav-start-btn" onClick={startNavigation} style={{ flex: 1 }}>
+                  {navigating ? "Navigating..." : "Start Navigation"}
+                </button>
+                {selectedBuilding.notesUrl && (
+                  <a 
+                    href={selectedBuilding.notesUrl} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="notes-btn"
+                  >
+                    View Notes 📚
+                  </a>
+                )}
+              </div>
 
               {/* Turn-by-turn Steps */}
               {steps.length > 0 && (
