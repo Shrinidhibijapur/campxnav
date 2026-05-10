@@ -4,7 +4,7 @@
 // Format: [longitude, latitude] (MapLibre convention)
 // ============================================================
 
-export interface BuildingGeo {
+interface BuildingGeo {
   sno: number;
   name: string;
   buildingNo: string;
@@ -14,20 +14,21 @@ export interface BuildingGeo {
   googleMapsUrl?: string;
   notesUrl?: string;
   height?: number;      // estimated building height in meters
+  roofColor?: string;   // hex color matching actual rooftop appearance
 }
 
 // Campus center point — Dayananda Sagar College of Engineering
-export const CAMPUS_CENTER: [number, number] = [77.5658, 12.9082];
+const CAMPUS_CENTER: [number, number] = [77.5658, 12.9082];
 
 // Default map view settings — zoomed tight on DSCE campus
-export const DEFAULT_VIEW = {
+const DEFAULT_VIEW = {
   center: CAMPUS_CENTER,
   zoom: 18,
   pitch: 55,
   bearing: -20,
 };
 
-export const buildings: BuildingGeo[] = [
+const buildings: BuildingGeo[] = [
   {
     "sno": 1,
     "buildingNo": "1",
@@ -41,6 +42,7 @@ export const buildings: BuildingGeo[] = [
       77.56651, 12.90887
     ],
     "height": 12,
+    "roofColor": "#c8b89a"
   },
   {
     "sno": 2,
@@ -55,6 +57,7 @@ export const buildings: BuildingGeo[] = [
       77.56704, 12.90923
     ],
     "height": 10,
+    "roofColor": "#d4cfc8"
   },
   {
     "sno": 3,
@@ -69,6 +72,7 @@ export const buildings: BuildingGeo[] = [
    77.56826, 12.90884
     ],
     "height": 12,
+    "roofColor": "#b8ada0"
   },
   {
     "sno": 4,
@@ -87,6 +91,7 @@ export const buildings: BuildingGeo[] = [
      77.56834, 12.90855
     ],
     "height": 18,
+    "roofColor": "#e0dbd4"
   },
   {
     "sno": 5,
@@ -101,6 +106,7 @@ export const buildings: BuildingGeo[] = [
     77.56798, 12.90855
     ],
     "height": 15,
+    "roofColor": "#a89e93"
   },
   {
     "sno": 6,
@@ -115,6 +121,7 @@ export const buildings: BuildingGeo[] = [
      77.56776, 12.90856
     ],
     "height": 12,
+    "roofColor": "#c4bdb3"
   },
   {
     "sno": 7,
@@ -129,6 +136,7 @@ export const buildings: BuildingGeo[] = [
       77.56776, 12.90824
     ],
     "height": 12,
+    "roofColor": "#b0a598"
   },
   {
     "sno": 8,
@@ -143,6 +151,7 @@ export const buildings: BuildingGeo[] = [
    77.56749, 12.90824
     ],
     "height": 10,
+    "roofColor": "#d8d2ca"
   },
   {
     "sno": 9,
@@ -158,6 +167,7 @@ export const buildings: BuildingGeo[] = [
       77.56773, 12.9079
     ],
     "height": 15,
+    "roofColor": "#bfb5a8"
   },
   {
     "sno": 10,
@@ -176,6 +186,7 @@ export const buildings: BuildingGeo[] = [
      77.56764, 12.90772
     ],
     "height": 18,
+    "roofColor": "#ccc5bb"
   },
   {
     "sno": 11,
@@ -192,6 +203,7 @@ export const buildings: BuildingGeo[] = [
       77.56763, 12.90721
     ],
     "height": 20,
+    "roofColor": "#ddd7ce"
   },
   {
     "sno": 12,
@@ -206,6 +218,7 @@ export const buildings: BuildingGeo[] = [
    77.56679, 12.90642
     ],
     "height": 12,
+    "roofColor": "#c9c1b5"
   },
   {
     "sno": 13,
@@ -221,6 +234,7 @@ export const buildings: BuildingGeo[] = [
       77.56628, 12.90714
     ],
     "height": 12,
+    "roofColor": "#d1cab0"
   },
   {
     "sno": 14,
@@ -236,6 +250,7 @@ export const buildings: BuildingGeo[] = [
       77.56635, 12.90679
     ],
     "height": 12,
+    "roofColor": "#bdb5a9"
   },
   {
     "sno": 15,
@@ -251,6 +266,7 @@ export const buildings: BuildingGeo[] = [
       77.56622, 12.90737
     ],
     "height": 12,
+    "roofColor": "#d4cdc2"
   },
   {
     "sno": 16,
@@ -265,6 +281,7 @@ export const buildings: BuildingGeo[] = [
       77.5656, 12.90708
     ],
     "height": 10,
+    "roofColor": "#c2bbb0"
   },
   {
     "sno": 17,
@@ -283,6 +300,7 @@ export const buildings: BuildingGeo[] = [
      77.56552, 12.90764
     ],
     "height": 15,
+    "roofColor": "#b5ada2"
   },
   {
     "sno": 18,
@@ -297,6 +315,7 @@ export const buildings: BuildingGeo[] = [
       77.56607, 12.90764
     ],
     "height": 8,
+    "roofColor": "#dcd6cd"
   },
   {
     "sno": 19,
@@ -314,6 +333,7 @@ export const buildings: BuildingGeo[] = [
      77.56608, 12.90778
     ],
     "height": 15,
+    "roofColor": "#c7c0b5"
   },
   {
     "sno": 20,
@@ -328,6 +348,7 @@ export const buildings: BuildingGeo[] = [
      77.56638, 12.90767
     ],
     "height": 18,
+    "roofColor": "#e2dcd5"
   },
   {
     "sno": 21,
@@ -342,6 +363,7 @@ export const buildings: BuildingGeo[] = [
       77.56562, 12.90808
     ],
     "height": 15,
+    "roofColor": "#c9c2b7"
   },
   {
     "sno": 22,
@@ -358,6 +380,7 @@ export const buildings: BuildingGeo[] = [
       77.56566, 12.90836
     ],
     "height": 12,
+    "roofColor": "#8b6b4a"
   },
   {
     "sno": 23,
@@ -372,6 +395,7 @@ export const buildings: BuildingGeo[] = [
      77.5654, 12.90868
     ],
     "height": 18,
+    "roofColor": "#d5cfc6"
   },
   {
     "sno": 24,
@@ -387,6 +411,7 @@ export const buildings: BuildingGeo[] = [
      77.56784, 12.90809
     ],
     "height": 12,
+    "roofColor": "#b8b0a4"
   },
   {
     "sno": 25,
@@ -402,6 +427,7 @@ export const buildings: BuildingGeo[] = [
      77.56603, 12.90876
     ],
     "height": 10,
+    "roofColor": "#d0c9be"
   },
   {
     "sno": 26,
@@ -416,6 +442,7 @@ export const buildings: BuildingGeo[] = [
     77.56639, 12.9088
     ],
     "height": 8,
+    "roofColor": "#c5bfb5"
   },
   {
     "sno": 27,
@@ -431,6 +458,7 @@ export const buildings: BuildingGeo[] = [
      77.56704, 12.90892
     ],
     "height": 12,
+    "roofColor": "#d6d0c6"
   },
   {
     "sno": 28,
@@ -445,6 +473,7 @@ export const buildings: BuildingGeo[] = [
      77.56615, 12.90812
     ],
     "height": 5,
+    "roofColor": "#9e9588"
   },
   {
     "sno": 29,
@@ -459,6 +488,7 @@ export const buildings: BuildingGeo[] = [
       77.56671, 12.90854
     ],
     "height": 8,
+    "roofColor": "#c4a882"
   },
   {
     "sno": 30,
@@ -473,6 +503,7 @@ export const buildings: BuildingGeo[] = [
    77.56644, 12.90843
     ],
     "height": 5,
+    "roofColor": "#b5ada2"
   },
   {
     "sno": 31,
@@ -487,6 +518,7 @@ export const buildings: BuildingGeo[] = [
   77.56546, 12.90809
     ],
     "height": 5,
+    "roofColor": "#bab3a8"
   },
   {
     "sno": 32,
@@ -501,6 +533,7 @@ export const buildings: BuildingGeo[] = [
       77.56631, 12.90836
     ],
     "height": 4,
+    "roofColor": "#a8a19a"
   },
   {
     "sno": 33,
@@ -515,6 +548,7 @@ export const buildings: BuildingGeo[] = [
     77.56674, 12.90713
     ],
     "height": 0,
+    "roofColor": "#5a7a3a"
   },
   {
     "sno": 34,
@@ -529,6 +563,7 @@ export const buildings: BuildingGeo[] = [
 77.5669, 12.90937
     ],
     "height": 4,
+    "roofColor": "#948d84"
   },
   {
     "sno": 35,
@@ -543,6 +578,7 @@ export const buildings: BuildingGeo[] = [
     77.56648, 12.90931
     ],
     "height": 4,
+    "roofColor": "#948d84"
   },
   {
     "sno": 36,
@@ -557,6 +593,7 @@ export const buildings: BuildingGeo[] = [
      77.56786, 12.90901
     ],
     "height": 0,
+    "roofColor": "#6b6560"
   },
   {
     "sno": 37,
@@ -571,6 +608,7 @@ export const buildings: BuildingGeo[] = [
     77.56595, 12.90914
     ],
     "height": 0,
+    "roofColor": "#6b6560"
   },
   {
     "sno": 38,
@@ -585,6 +623,7 @@ export const buildings: BuildingGeo[] = [
    77.5663, 12.90877
     ],
     "height": 5,
+    "roofColor": "#c2bab0"
   },
   {
     "sno": 39,
@@ -599,6 +638,7 @@ export const buildings: BuildingGeo[] = [
       77.5674, 12.90928
     ],
     "height": 4,
+    "roofColor": "#b0a89e"
   },
   {
     "sno": 40,
@@ -613,6 +653,7 @@ export const buildings: BuildingGeo[] = [
     77.5672, 12.90937
     ],
     "height": 3,
+    "roofColor": "#a09890"
   },
   {
     "sno": 41,
@@ -627,11 +668,12 @@ export const buildings: BuildingGeo[] = [
       77.56702, 12.90877
     ],
     "height": 3,
+    "roofColor": "#a09890"
   }
 ];
 
 // Utility: Calculate Haversine distance between two points (meters)
-export function haversineDistance(
+function haversineDistance(
   coord1: [number, number],
   coord2: [number, number]
 ): number {
@@ -653,21 +695,23 @@ export function haversineDistance(
 }
 
 // Format distance for display
-export function formatDistance(meters: number): string {
+function formatDistance(meters: number): string {
   if (meters < 1000) return `${Math.round(meters)}m`;
   return `${(meters / 1000).toFixed(1)}km`;
 }
 
 // Estimate walking time (avg 5 km/h = ~83m/min)
-export function estimateWalkTime(meters: number): string {
+function estimateWalkTime(meters: number): string {
   const minutes = Math.ceil(meters / 83);
   if (minutes < 1) return "< 1 min";
   return `~${minutes} min`;
 }
 
 // Estimate driving time (avg 20 km/h campus = ~333m/min)
-export function estimateDriveTime(meters: number): string {
+function estimateDriveTime(meters: number): string {
   const minutes = Math.ceil(meters / 333);
   if (minutes < 1) return "< 1 min";
   return `~${minutes} min`;
 }
+
+fs.writeFileSync('buildings.json', JSON.stringify(buildings));

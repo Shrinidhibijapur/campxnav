@@ -7,7 +7,8 @@ import { gsap } from "gsap";
 import confetti from "canvas-confetti";
 
 import { buildings, BuildingGeo, CAMPUS_CENTER, DEFAULT_VIEW, haversineDistance, formatDistance, estimateWalkTime, estimateDriveTime } from "@/lib/buildings-geo";
-import { getMapStyleUrl, BUILDING_EXTRUSION_LAYER } from "@/lib/map-styles";
+import { getMapStyleUrl } from "@/lib/map-styles";
+import { buildingsToGeoJSON, resolveBuilding3DId } from "@/lib/campus-buildings-3d";
 
 // ============================================================
 // Types
@@ -28,6 +29,41 @@ interface RouteData {
 }
 
 type TransportProfile = "foot-walking" | "driving-car";
+interface GoogleBuildingInsights {
+  placeName?: string;
+  material: string;
+  windowStyle: string;
+  appearance: string;
+  wallColor?: string;
+  windowColor?: string;
+  accentColor?: string;
+  photoUrl?: string;
+  source?: string;
+}
+
+interface BuildingVisualState {
+  wallColor?: string;
+}
+
+function visualStateFromInsights(insights: GoogleBuildingInsights): BuildingVisualState {
+  return { wallColor: insights.wallColor || "#c9c2b8" };
+}
+
+function getBuildingProfile(bldg: BuildingGeo) {
+  const h = bldg.height ?? 0;
+  const floors = h > 0 ? Math.max(1, Math.round(h / 3.2)) : 1;
+  const lowerName = bldg.name.toLowerCase();
+  const material = lowerName.includes("hostel")
+    ? "painted concrete"
+    : lowerName.includes("auditorium")
+    ? "concrete with facade cladding"
+    : lowerName.includes("temple")
+    ? "stone and plaster"
+    : "reinforced concrete + plaster";
+  const windowStyle = floors >= 5 ? "dense ribbon windows" : floors >= 3 ? "standard academic window grid" : "limited fenestration";
+  const appearance = h >= 18 ? "high-rise institutional block" : h >= 12 ? "mid-rise academic block" : "low-rise utility structure";
+  return { floors, material, windowStyle, appearance };
+}
 
 // ============================================================
 // Component
@@ -39,6 +75,7 @@ export default function CampusMap() {
   const userMarkerRef = useRef<maplibregl.Marker | null>(null);
   const watchIdRef = useRef<number | null>(null);
   const abortRef = useRef<AbortController | null>(null);
+  const analyzedBuildingsRef = useRef<Set<number>>(new Set());
 
   const [loading, setLoading] = useState(true);
   const [selectedBuilding, setSelectedBuilding] = useState<BuildingGeo | null>(null);
@@ -50,6 +87,18 @@ export default function CampusMap() {
   const [navigating, setNavigating] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const [toast, setToast] = useState<string | null>(null);
+  const [buildingInsights, setBuildingInsights] = useState<Record<number, GoogleBuildingInsights>>({});
+
+  const applyFeatureVisualState = useCallback((bldg: BuildingGeo, insights: GoogleBuildingInsights) => {
+    if (!mapRef.current) return;
+    const featureId = resolveBuilding3DId(bldg.buildingNo, bldg.name);
+    if (!featureId) return;
+    const state = visualStateFromInsights(insights);
+    mapRef.current.setFeatureState(
+      { source: "campus-buildings-3d", id: featureId },
+      state
+    );
+  }, []);
 
   // Developer Mode (Coordinate Picker)
   const [devMode, setDevMode] = useState(false);
@@ -91,7 +140,14 @@ export default function CampusMap() {
         pitch: 0,
         bearing: 0,
         maxPitch: 85,
+        fadeDuration: 0,
         attributionControl: false,
+        pixelRatio: Math.min(window.devicePixelRatio, 2),
+        canvasContextAttributes: {
+          antialias: true,
+          powerPreference: "high-performance",
+          preserveDrawingBuffer: false,
+        },
       });
 
     mapRef.current = map;
@@ -104,12 +160,40 @@ export default function CampusMap() {
         const el = document.createElement("div");
         el.className = "building-marker";
         el.dataset.buildingId = String(bldg.sno);
-        const roofColor = bldg.roofColor || "#fbbf24";
-        const isGroundLevel = bldg.height === 0;
+        const nameLower = (bldg.name || "").toLowerCase();
+        let pinColor = "#ef4444"; // red for buildings
+        let markerVariant: "red" | "green" | "yellow" = "red";
+        if (
+          nameLower.includes("food") ||
+          nameLower.includes("ground") ||
+          nameLower.includes("mess") ||
+          nameLower.includes("canteen") ||
+          nameLower.includes("amphi")
+        ) {
+          pinColor = "#22c55e"; // green
+          markerVariant = "green";
+        } else if (
+          nameLower.includes("gate") ||
+          nameLower.includes("parking") ||
+          nameLower.includes("conveno") ||
+          nameLower.includes("xerox") ||
+          nameLower.includes("washroom")
+        ) {
+          pinColor = "#f59e0b"; // yellow
+          markerVariant = "yellow";
+        }
+
+        const markerText =
+          markerVariant === "red"
+            ? bldg.buildingNo !== "--"
+              ? bldg.buildingNo
+              : bldg.label || "•"
+            : "";
+
         el.innerHTML = `
-          <div class="pin" style="border-bottom: 3px solid ${roofColor}; ${isGroundLevel ? 'opacity: 0.7; transform: scale(0.85);' : ''}">
-            <span class="pin-number">${bldg.buildingNo !== "--" ? bldg.buildingNo : ""}</span>
-            <span class="pin-label">${bldg.label || bldg.name}</span>
+          <div class="pin-modern ${markerVariant !== "red" ? "tag-only" : ""}" style="--pin-color: ${pinColor}">
+            <span class="pin-modern-number">${markerText}</span>
+            <span class="pin-modern-pulse"></span>
           </div>
         `;
         el.addEventListener("click", (e) => {
@@ -125,27 +209,65 @@ export default function CampusMap() {
 
     // Helper: try adding 3D building extrusions
     const add3DBuildings = () => {
+      // Always add custom campus building extrusions (GeoJSON)
       try {
-        if (map.getLayer("3d-buildings-custom")) return;
-        // Detect which vector source is available (varies by style provider)
-        const possibleSources = ["openmaptiles", "maptiler_planet", "composite"];
-        let vectorSource: string | null = null;
-        for (const src of possibleSources) {
-          if (map.getSource(src)) {
-            vectorSource = src;
-            break;
-          }
-        }
-        if (vectorSource) {
-          const layer = {
-            ...BUILDING_EXTRUSION_LAYER,
-            source: vectorSource,
-          };
-          map.addLayer(layer as maplibregl.LayerSpecification);
+        if (map.getSource("campus-buildings-3d")) return;
+        map.addSource("campus-buildings-3d", {
+          type: "geojson",
+          data: buildingsToGeoJSON() as GeoJSON.GeoJSON,
+        });
+
+
+
+        // Main building extrusion with per-building colors
+        map.addLayer({
+          id: "campus-buildings-3d",
+          type: "fill-extrusion",
+          source: "campus-buildings-3d",
+          paint: {
+            "fill-extrusion-color": ["coalesce", ["feature-state", "wallColor"], ["get", "wallColor"]],
+            "fill-extrusion-height": ["get", "height"],
+            "fill-extrusion-base": ["get", "minHeight"],
+            "fill-extrusion-opacity": 1,
+            "fill-extrusion-vertical-gradient": true,
+          },
+        });
+
+
+      } catch (err) {
+        console.warn("3D campus buildings:", err);
+      }
+
+      // Add surrounding map buildings
+      try {
+        if (!map.getSource("surrounding-buildings")) {
+          map.addSource("surrounding-buildings", {
+            type: "geojson",
+            data: "/surrounding-buildings.json"
+          });
+          map.addLayer({
+            id: "surrounding-buildings-3d",
+            type: "fill-extrusion",
+            source: "surrounding-buildings",
+            paint: {
+              "fill-extrusion-color": "#e2e8f0",
+              "fill-extrusion-height": ["get", "height"],
+              "fill-extrusion-base": ["get", "minHeight"],
+              "fill-extrusion-opacity": 0.8,
+            }
+          }, "campus-buildings-3d"); // insert behind campus buildings
         }
       } catch (err) {
-        console.warn("3D buildings:", err);
+        console.warn("Surrounding buildings:", err);
       }
+    };
+
+    const tryAdd3DBuildings = () => {
+      if (!map.isStyleLoaded()) {
+        map.once("styledata", tryAdd3DBuildings);
+        return;
+      }
+      add3DBuildings();
     };
 
     // Helper: animate camera to campus and dismiss loading
@@ -167,16 +289,19 @@ export default function CampusMap() {
     };
 
     // On map fully loaded
+    let failsafeTimer: ReturnType<typeof setTimeout>;
     map.on("load", () => {
-      add3DBuildings();
+      clearTimeout(failsafeTimer);
+      tryAdd3DBuildings();
       addMarkers();
       setTimeout(animateToCampus, 400);
     });
 
     // Failsafe: if map doesn't fire 'load' within 8s, dismiss loading anyway
-    const failsafeTimer = setTimeout(() => {
+    failsafeTimer = setTimeout(() => {
       if (loading) {
         console.warn("Map load failsafe triggered");
+        tryAdd3DBuildings();
         addMarkers();
         setLoading(false);
       }
@@ -245,9 +370,16 @@ export default function CampusMap() {
         }
       },
       (err) => {
+        const geolocationError =
+          err.code === 1
+            ? "Location permission denied. Enable location access for live navigation."
+            : err.code === 2
+            ? "Location currently unavailable. Trying a lower-accuracy fallback."
+            : "Location request timed out. Using map center until GPS is ready.";
         console.warn("Geolocation error:", err.message);
+        showToast(geolocationError);
       },
-      { enableHighAccuracy: true, maximumAge: 5000, timeout: 15000 }
+      { enableHighAccuracy: false, maximumAge: 20000, timeout: 10000 }
     );
 
     watchIdRef.current = id;
@@ -304,9 +436,58 @@ export default function CampusMap() {
           essential: true,
         });
       }
+
+      if (!buildingInsights[bldg.sno]) {
+        fetch(`/api/building-insights?name=${encodeURIComponent(bldg.name)}&buildingNo=${encodeURIComponent(bldg.buildingNo)}&lat=${bldg.coordinates[1]}&lng=${bldg.coordinates[0]}`)
+          .then((res) => (res.ok ? res.json() : null))
+          .then((data) => {
+            if (data) {
+              applyFeatureVisualState(bldg, data as GoogleBuildingInsights);
+              setBuildingInsights((prev) => ({
+                ...prev,
+                [bldg.sno]: data as GoogleBuildingInsights,
+              }));
+            }
+          })
+          .catch(() => {
+            // Keep local inferred fallback only.
+          });
+      }
     },
-    []
+    [applyFeatureVisualState, buildingInsights]
   );
+
+  useEffect(() => {
+    if (!mapRef.current) return;
+
+    const toAnalyze = buildings.filter((b) => (b.height ?? 0) > 0 && !b.name.toLowerCase().includes("parking") && !b.name.toLowerCase().includes("ground"));
+    let cancelled = false;
+
+    const run = async () => {
+      for (const b of toAnalyze) {
+        if (cancelled) break;
+        if (analyzedBuildingsRef.current.has(b.sno)) continue;
+        analyzedBuildingsRef.current.add(b.sno);
+
+        try {
+          const res = await fetch(`/api/building-insights?name=${encodeURIComponent(b.name)}&buildingNo=${encodeURIComponent(b.buildingNo)}&lat=${b.coordinates[1]}&lng=${b.coordinates[0]}`);
+          if (!res.ok) continue;
+          const data = (await res.json()) as GoogleBuildingInsights;
+          if (cancelled) break;
+          applyFeatureVisualState(b, data);
+          setBuildingInsights((prev) => ({ ...prev, [b.sno]: data }));
+        } catch {
+          // Keep default styling when lookup fails.
+        }
+        await new Promise((resolve) => setTimeout(resolve, 180));
+      }
+    };
+
+    run();
+    return () => {
+      cancelled = true;
+    };
+  }, [applyFeatureVisualState]);
 
   // ============================================================
   // Clear active markers
@@ -610,6 +791,8 @@ export default function CampusMap() {
     : 0;
 
   const steps = routeData?.properties?.segments?.[0]?.steps || [];
+  const selectedBuildingProfile = selectedBuilding ? getBuildingProfile(selectedBuilding) : null;
+  const selectedGoogleInsights = selectedBuilding ? buildingInsights[selectedBuilding.sno] : null;
 
   // ============================================================
   // Render
@@ -629,6 +812,14 @@ export default function CampusMap() {
 
       {/* Map */}
       <div ref={mapContainer} className="map-wrapper" />
+
+      {/* Satellite 3D Badge */}
+      {!loading && (
+        <div className="satellite-badge">
+          <span className="dot" />
+          Satellite 3D
+        </div>
+      )}
 
       {/* Search Bar (hidden during navigation) */}
       {!navigating && (
@@ -789,7 +980,7 @@ export default function CampusMap() {
             {/* Street View Preview Image */}
             <div style={{
               width: "100%", height: "160px",
-              backgroundImage: `url(https://maps.googleapis.com/maps/api/streetview?size=600x200&location=${selectedBuilding.coordinates[1]},${selectedBuilding.coordinates[0]}&fov=90&heading=0&pitch=5&key=${process.env.NEXT_PUBLIC_GSV_KEY || ""})`,
+              backgroundImage: `url(${selectedGoogleInsights?.photoUrl || `https://maps.googleapis.com/maps/api/streetview?size=600x200&location=${selectedBuilding.coordinates[1]},${selectedBuilding.coordinates[0]}&fov=90&heading=0&pitch=5&key=${process.env.NEXT_PUBLIC_GSV_KEY || ""}`})`,
               backgroundSize: "cover", backgroundPosition: "center",
               backgroundColor: "rgba(0,0,0,0.3)",
               borderTopLeftRadius: "24px", borderTopRightRadius: "24px",
@@ -880,6 +1071,42 @@ export default function CampusMap() {
                   </a>
                 )}
               </div>
+
+              {selectedBuildingProfile && (
+                <div
+                  style={{
+                    marginTop: 14,
+                    padding: "12px",
+                    border: "1px solid var(--border-subtle)",
+                    borderRadius: "10px",
+                    background: "rgba(255,255,255,0.03)",
+                  }}
+                >
+                  <div style={{ fontSize: "11px", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.4px", marginBottom: "8px" }}>
+                    Building visual profile
+                  </div>
+                  <div style={{ fontSize: "12px", color: "var(--text-secondary)", lineHeight: 1.5 }}>
+                    Appearance: <span style={{ color: "var(--text-primary)" }}>{selectedGoogleInsights?.appearance || selectedBuildingProfile.appearance}</span><br />
+                    Material: <span style={{ color: "var(--text-primary)" }}>{selectedGoogleInsights?.material || selectedBuildingProfile.material}</span><br />
+                    Windows: <span style={{ color: "var(--text-primary)" }}>{selectedGoogleInsights?.windowStyle || selectedBuildingProfile.windowStyle}</span>
+                  </div>
+                  {selectedGoogleInsights?.source && (
+                    <div style={{ marginTop: "6px", fontSize: "11px", color: "var(--text-muted)" }}>
+                      Visual source: {selectedGoogleInsights.source}
+                    </div>
+                  )}
+                  {selectedBuilding.googleMapsUrl && (
+                    <a
+                      href={selectedBuilding.googleMapsUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ display: "inline-block", marginTop: "8px", fontSize: "12px", color: "var(--cyan)", textDecoration: "none", fontWeight: 600 }}
+                    >
+                      Open Google Maps reference ↗
+                    </a>
+                  )}
+                </div>
+              )}
 
               {/* Turn-by-turn Steps */}
               {steps.length > 0 && (

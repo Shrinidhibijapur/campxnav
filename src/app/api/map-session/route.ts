@@ -10,7 +10,8 @@ const GOOGLE_API_KEY = process.env.NEXT_PUBLIC_GSV_KEY || "";
 
 export async function GET() {
   if (!GOOGLE_API_KEY) {
-    return NextResponse.json({ error: "No Google API key configured" }, { status: 400 });
+    // Return success with null session so client can silently fall back.
+    return NextResponse.json({ session: null, reason: "missing_api_key" }, { status: 200 });
   }
 
   try {

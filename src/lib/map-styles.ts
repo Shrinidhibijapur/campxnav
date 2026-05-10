@@ -2,7 +2,7 @@ import type { StyleSpecification } from "maplibre-gl";
 
 // ============================================================
 // Map Style Configuration
-// Priority: Google Satellite → MapTiler Hybrid → Esri Satellite
+// Priority: Google Satellite (XYZ) → MapTiler Hybrid → Esri Satellite
 // ============================================================
 
 const MAPTILER_KEY = process.env.NEXT_PUBLIC_MAPTILER_KEY || "";
@@ -10,13 +10,15 @@ const GOOGLE_KEY = process.env.NEXT_PUBLIC_GSV_KEY || "";
 
 /**
  * Returns the best satellite map style.
- * Priority: Google Satellite (session-based) → MapTiler Hybrid → Esri Satellite
+ * Uses Google Maps satellite tiles for maximum zoom and clarity.
+ * Falls back to MapTiler hybrid, then Esri World Imagery.
  */
 export function getMapStyleUrl(googleSession?: string): string | StyleSpecification {
-  // Option 1: Google Maps satellite tiles (looks exactly like Google Maps)
+  // Option 1: Google Maps satellite tiles with session token (Map Tiles API)
   if (googleSession && GOOGLE_KEY) {
     return {
       version: 8,
+      glyphs: "https://fonts.openmaptiles.org/{fontstack}/{range}.pbf",
       sources: {
         "google-satellite": {
           type: "raster",
@@ -40,29 +42,108 @@ export function getMapStyleUrl(googleSession?: string): string | StyleSpecificat
     };
   }
 
-  // Option 2: MapTiler hybrid (satellite + labels + vector data for 3D buildings)
+  // Option 2: Google Satellite XYZ tiles (standard web tiles, no API key needed for basic usage)
+  // These provide excellent high-zoom satellite imagery
+  if (GOOGLE_KEY) {
+    return {
+      version: 8,
+      glyphs: "https://fonts.openmaptiles.org/{fontstack}/{range}.pbf",
+      sources: {
+        "google-satellite": {
+          type: "raster",
+          tiles: [
+            "https://mt0.google.com/vt/lyrs=s&x={x}&y={y}&z={z}",
+            "https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}",
+            "https://mt2.google.com/vt/lyrs=s&x={x}&y={y}&z={z}",
+            "https://mt3.google.com/vt/lyrs=s&x={x}&y={y}&z={z}"
+          ],
+          tileSize: 256,
+          maxzoom: 21,
+          attribution: "Imagery ©Google"
+        },
+        "google-roads": {
+          type: "raster",
+          tiles: [
+            "https://mt0.google.com/vt/lyrs=h&x={x}&y={y}&z={z}",
+            "https://mt1.google.com/vt/lyrs=h&x={x}&y={y}&z={z}"
+          ],
+          tileSize: 256,
+          maxzoom: 21,
+          attribution: "Labels ©Google"
+        }
+      },
+      layers: [
+        {
+          id: "google-satellite",
+          type: "raster",
+          source: "google-satellite",
+          minzoom: 0,
+          maxzoom: 21
+        },
+        {
+          id: "google-roads",
+          type: "raster",
+          source: "google-roads",
+          minzoom: 0,
+          maxzoom: 21,
+          paint: {
+            "raster-opacity": 0.65
+          }
+        }
+      ]
+    };
+  }
+
+  // Option 3: MapTiler hybrid (satellite + labels + vector data)
   if (MAPTILER_KEY && MAPTILER_KEY !== "YOUR_MAPTILER_KEY_HERE") {
     return `https://api.maptiler.com/maps/hybrid/style.json?key=${MAPTILER_KEY}`;
   }
 
-  // Option 3: Esri World Imagery (free, no key required)
+  // Option 4: Google Satellite XYZ tiles (no API key needed) — best fallback
   return {
     version: 8,
+    glyphs: "https://fonts.openmaptiles.org/{fontstack}/{range}.pbf",
     sources: {
-      "esri-satellite": {
+      "google-satellite": {
         type: "raster",
-        tiles: ["https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"],
+        tiles: [
+          "https://mt0.google.com/vt/lyrs=s&x={x}&y={y}&z={z}",
+          "https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}",
+          "https://mt2.google.com/vt/lyrs=s&x={x}&y={y}&z={z}",
+          "https://mt3.google.com/vt/lyrs=s&x={x}&y={y}&z={z}"
+        ],
         tileSize: 256,
-        attribution: "Tiles &copy; Esri"
+        maxzoom: 21,
+        attribution: "Imagery ©Google"
+      },
+      "google-roads": {
+        type: "raster",
+        tiles: [
+          "https://mt0.google.com/vt/lyrs=h&x={x}&y={y}&z={z}",
+          "https://mt1.google.com/vt/lyrs=h&x={x}&y={y}&z={z}"
+        ],
+        tileSize: 256,
+        maxzoom: 21,
+        attribution: "Labels ©Google"
       }
     },
     layers: [
       {
-        id: "satellite",
+        id: "google-satellite",
         type: "raster",
-        source: "esri-satellite",
+        source: "google-satellite",
         minzoom: 0,
-        maxzoom: 22
+        maxzoom: 21
+      },
+      {
+        id: "google-roads",
+        type: "raster",
+        source: "google-roads",
+        minzoom: 0,
+        maxzoom: 21,
+        paint: {
+          "raster-opacity": 0.95
+        }
       }
     ]
   };
@@ -74,9 +155,8 @@ export function getMapTilerSatelliteUrl(): string | null {
   return `https://api.maptiler.com/maps/satellite/style.json?key=${MAPTILER_KEY}`;
 }
 
-// 3D Building extrusion layer config — varied realistic rooftop colors
-// Each building gets a different color based on its height + base, simulating
-// the natural variation you see in real satellite imagery
+// 3D Building extrusion layer config for OpenMapTiles vector source
+// Used when vector tile source is available (MapTiler)
 export const BUILDING_EXTRUSION_LAYER = {
   id: "3d-buildings-custom",
   type: "fill-extrusion" as const,
@@ -84,55 +164,16 @@ export const BUILDING_EXTRUSION_LAYER = {
   "source-layer": "building",
   minzoom: 14,
   paint: {
-    // Use a step expression on render_min_height to bucket buildings into
-    // different color families, creating realistic per-building variation
-    "fill-extrusion-color": [
-      "case",
-      // Bucket 1: ground-level short buildings → weathered concrete
-      ["<", ["coalesce", ["get", "render_height"], 8], 6],
-      "#a89b8c",
-      // Bucket 2: ~2 floor buildings → warm beige
-      ["<", ["coalesce", ["get", "render_height"], 8], 10],
-      [
-        "step", ["coalesce", ["get", "render_min_height"], 0],
-        "#b5a99a",   // beige
-        0.5, "#c2b8a8", // lighter beige
-        1, "#a89e93"    // gray-beige
-      ],
-      // Bucket 3: ~3 floor buildings → varied gray/cream
-      ["<", ["coalesce", ["get", "render_height"], 8], 14],
-      [
-        "step", ["coalesce", ["get", "render_min_height"], 0],
-        "#bfb5a8",   // warm gray
-        0.5, "#c9c1b5", // cream
-        1, "#b0a598"    // darker gray
-      ],
-      // Bucket 4: ~4 floor buildings → lighter concrete
-      ["<", ["coalesce", ["get", "render_height"], 8], 18],
-      [
-        "step", ["coalesce", ["get", "render_min_height"], 0],
-        "#c4bdb3",   // light concrete
-        0.5, "#d1cab0", // yellowish
-        1, "#bdb5a9"    // neutral concrete
-      ],
-      // Bucket 5: tall 5+ floor buildings → white/off-white
-      [
-        "step", ["coalesce", ["get", "render_min_height"], 0],
-        "#ddd7ce",   // off-white
-        0.5, "#e2dcd5", // white painted
-        1, "#d4cdc2"    // cream
-      ]
-    ],
+    "fill-extrusion-color": "#e2e8f0",
     "fill-extrusion-height": ["coalesce", ["get", "render_height"], 8],
     "fill-extrusion-base": ["coalesce", ["get", "render_min_height"], 0],
     "fill-extrusion-opacity": [
       "interpolate", ["linear"], ["zoom"],
       15, 0,
       16.5, 0.4,
-      17, 0.65,
-      18, 0.75
+      17, 0.7,
+      18, 0.8
     ],
-    // Vertical gradient: darker at base (shadow), lighter at top (sunlight)
     "fill-extrusion-vertical-gradient": true,
   }
 };
