@@ -347,7 +347,7 @@ export const buildings: BuildingGeo[] = [
     "sno": 22,
     "buildingNo": "22",
     "label": "CD",
-    "name": "Chocolate Building",
+    "name": "Computer Science & Design Block",
     "departments": [
       "CS & Design Engineering",
       "Medical Electronics",
