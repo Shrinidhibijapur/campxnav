@@ -38,6 +38,7 @@ interface GoogleBuildingInsights {
   windowColor?: string;
   accentColor?: string;
   photoUrl?: string;
+  localPhotos?: string[];
   source?: string;
 }
 
@@ -88,6 +89,8 @@ export default function CampusMap() {
   const [currentStep, setCurrentStep] = useState(0);
   const [toast, setToast] = useState<string | null>(null);
   const [buildingInsights, setBuildingInsights] = useState<Record<number, GoogleBuildingInsights>>({});
+  const [photoIdx, setPhotoIdx] = useState(0);
+  const [imgError, setImgError] = useState(false);
 
   const applyFeatureVisualState = useCallback((bldg: BuildingGeo, insights: GoogleBuildingInsights) => {
     if (!mapRef.current) return;
@@ -416,6 +419,8 @@ export default function CampusMap() {
       setRouteData(null);
       setNavigating(false);
       setCurrentStep(0);
+      setPhotoIdx(0);
+      setImgError(false);
 
       clearActiveMarkers();
 
@@ -438,7 +443,7 @@ export default function CampusMap() {
       }
 
       if (!buildingInsights[bldg.sno]) {
-        fetch(`/api/building-insights?name=${encodeURIComponent(bldg.name)}&buildingNo=${encodeURIComponent(bldg.buildingNo)}&lat=${bldg.coordinates[1]}&lng=${bldg.coordinates[0]}`)
+        fetch(`/api/building-insights?name=${encodeURIComponent(bldg.name)}&buildingNo=${encodeURIComponent(bldg.buildingNo)}&label=${encodeURIComponent(bldg.label || "")}&sno=${bldg.sno}&lat=${bldg.coordinates[1]}&lng=${bldg.coordinates[0]}`)
           .then((res) => (res.ok ? res.json() : null))
           .then((data) => {
             if (data) {
@@ -470,7 +475,7 @@ export default function CampusMap() {
         analyzedBuildingsRef.current.add(b.sno);
 
         try {
-          const res = await fetch(`/api/building-insights?name=${encodeURIComponent(b.name)}&buildingNo=${encodeURIComponent(b.buildingNo)}&lat=${b.coordinates[1]}&lng=${b.coordinates[0]}`);
+          const res = await fetch(`/api/building-insights?name=${encodeURIComponent(b.name)}&buildingNo=${encodeURIComponent(b.buildingNo)}&label=${encodeURIComponent(b.label || "")}&sno=${b.sno}&lat=${b.coordinates[1]}&lng=${b.coordinates[0]}`);
           if (!res.ok) continue;
           const data = (await res.json()) as GoogleBuildingInsights;
           if (cancelled) break;
@@ -977,28 +982,83 @@ export default function CampusMap() {
         <div className="nav-panel-handle" />
         {selectedBuilding && (
           <>
-            {/* Street View Preview Image */}
-            <div style={{
-              width: "100%", height: "160px",
-              backgroundImage: `url(${selectedGoogleInsights?.photoUrl || `https://maps.googleapis.com/maps/api/streetview?size=600x200&location=${selectedBuilding.coordinates[1]},${selectedBuilding.coordinates[0]}&fov=90&heading=0&pitch=5&key=${process.env.NEXT_PUBLIC_GSV_KEY || ""}`})`,
-              backgroundSize: "cover", backgroundPosition: "center",
-              backgroundColor: "rgba(0,0,0,0.3)",
-              borderTopLeftRadius: "24px", borderTopRightRadius: "24px",
-              borderBottom: "1px solid rgba(255,255,255,0.1)",
-              position: "relative"
-            }}>
-              {/* Building number badge overlay */}
-              {selectedBuilding.buildingNo !== "--" && (
-                <div style={{
-                  position: "absolute", bottom: 8, left: 12,
-                  background: "var(--amber)", color: "#1a1a2e",
-                  padding: "2px 10px", borderRadius: "6px",
-                  fontSize: "13px", fontWeight: 800
-                }}>
-                  #{selectedBuilding.buildingNo}
+            {/* Building Photo — Only show local photos from public/buildings */}
+            {(() => {
+              const locals = selectedGoogleInsights?.localPhotos || [];
+              const currentPhoto = locals[photoIdx] || locals[0];
+              const hasMultiple = locals.length > 1;
+              return (
+                <div className="building-photo-container">
+                  {currentPhoto && !imgError ? (
+                    (() => {
+                      const isHtml = currentPhoto.toLowerCase().endsWith(".htm") || currentPhoto.toLowerCase().endsWith(".html");
+                      if (isHtml) {
+                        return (
+                          <iframe
+                            className="building-photo"
+                            src={currentPhoto}
+                            style={{ border: "none", width: "100%", height: "100%", background: "#fff" }}
+                            title={selectedBuilding.name}
+                          />
+                        );
+                      }
+                      return (
+                        <img
+                          className="building-photo"
+                          src={currentPhoto}
+                          alt={selectedBuilding.name}
+                          onError={() => {
+                            // If current photo fails, try next in list
+                            if (photoIdx < locals.length - 1) {
+                              setPhotoIdx(photoIdx + 1);
+                            } else {
+                              setImgError(true);
+                            }
+                          }}
+                        />
+                      );
+                    })()
+                  ) : (
+                    <div className="building-photo-placeholder">
+                      <span>🏛</span>
+                      <span style={{ fontSize: "11px", color: "var(--text-muted)" }}>No photo available</span>
+                    </div>
+                  )}
+                  {/* Photo navigation arrows for multiple local photos */}
+                  {hasMultiple && !imgError && (
+                    <>
+                      <button
+                        className="photo-nav-btn photo-nav-prev"
+                        onClick={(e) => { e.stopPropagation(); setPhotoIdx(Math.max(0, photoIdx - 1)); }}
+                        disabled={photoIdx === 0}
+                      >
+                        ‹
+                      </button>
+                      <button
+                        className="photo-nav-btn photo-nav-next"
+                        onClick={(e) => { e.stopPropagation(); setPhotoIdx(Math.min(locals.length - 1, photoIdx + 1)); }}
+                        disabled={photoIdx >= locals.length - 1}
+                      >
+                        ›
+                      </button>
+                      <div className="photo-dots">
+                        {locals.map((_, i) => (
+                          <span key={i} className={`photo-dot ${i === photoIdx ? "active" : ""}`} onClick={() => setPhotoIdx(i)} />
+                        ))}
+                      </div>
+                    </>
+                  )}
+                  {/* Building number badge */}
+                  {selectedBuilding.buildingNo !== "--" && (
+                    <div className="building-photo-badge">#{selectedBuilding.buildingNo}</div>
+                  )}
+                  {/* Local photo indicator */}
+                  {locals.length > 0 && photoIdx < locals.length && (
+                    <div className="photo-source-badge">📷 Campus Photo</div>
+                  )}
                 </div>
-              )}
-            </div>
+              );
+            })()}
             <div className="nav-panel-header" style={{ paddingTop: "12px" }}>
               <div>
                 <h2>
